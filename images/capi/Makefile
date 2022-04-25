@@ -81,6 +81,13 @@ deps-gce:
 	hack/ensure-packer.sh
 	hack/ensure-goss.sh
 
+.PHONY: deps-nutanix
+deps-nutanix: ## Installs/checks dependencies for Nutanix builds
+deps-nutanix:
+	hack/ensure-ansible.sh
+	hack/ensure-packer.sh
+	hack/ensure-goss.sh
+
 .PHONY: deps-ova
 deps-ova: ## Installs/checks dependencies for OVA builds
 deps-ova:
@@ -261,6 +268,8 @@ HAPROXY_OVA_VSPHERE_BUILD_NAMES		:=	$(addprefix haproxy-ova-vsphere-,$(PHOTON_VE
 AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8
 GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004
 
+NUTANIX_BUILD_NAMES        ?= nutanix-ubuntu-2004
+
 # Make needs these lists to be space delimited, no quotes
 VHD_TARGETS := $(shell grep VHD_TARGETS azure_targets.sh | sed 's/VHD_TARGETS=//' | tr -d \")
 SIG_TARGETS := $(shell grep SIG_TARGETS azure_targets.sh | sed 's/SIG_TARGETS=//' | tr -d \")
@@ -304,6 +313,8 @@ AZURE_VALIDATE_SIG_TARGETS	:= $(addprefix validate-,$(AZURE_BUILD_SIG_NAMES))
 AZURE_VALIDATE_SIG_GEN2_TARGETS	:= $(addprefix validate-,$(AZURE_BUILD_SIG_GEN2_NAMES))
 DO_BUILD_TARGETS 	:= $(addprefix build-,$(DO_BUILD_NAMES))
 DO_VALIDATE_TARGETS 	:= $(addprefix validate-,$(DO_BUILD_NAMES))
+NUTANIX_BUILD_TARGETS	:= $(addprefix build-,$(NUTANIX_BUILD_NAMES))
+NUTANIX_VALIDATE_TARGETS	:= $(addprefix validate-,$(NUTANIX_BUILD_NAMES))
 QEMU_FLATCAR_BUILD_TARGETS	:= $(addprefix build-,$(QEMU_FLATCAR_BUILD_NAMES))
 QEMU_FLATCAR_VALIDATE_TARGETS	:= $(addprefix validate-,$(QEMU_FLATCAR_BUILD_NAMES))
 QEMU_BUILD_TARGETS	:= $(addprefix build-,$(QEMU_BUILD_NAMES))
@@ -449,6 +460,14 @@ $(VBOX_BUILD_TARGETS): deps-vbox
 $(VBOX_VALIDATE_TARGETS): deps-vbox
 	packer validate $(if $(findstring windows,$@),$(PACKER_WINDOWS_NODE_FLAGS),$(PACKER_NODE_FLAGS)) -var-file="packer/vbox/packer-common.json" -var-file="$(abspath packer/vbox/$(subst validate-vbox-,,$@).json)" -only=virtualbox-iso $(ABSOLUTE_PACKER_VAR_FILES) packer/vbox/packer-$(if $(findstring windows,$@),windows).json
 
+.PHONY: $(NUTANIX_BUILD_TARGETS)
+$(NUTANIX_BUILD_TARGETS): deps-nutanix
+	packer build $(PACKER_NODE_FLAGS) -var-file="packer/nutanix/nutanix.json" -var-file="$(abspath packer/nutanix/$(subst build-nutanix-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/nutanix/packer.json
+
+.PHONY: $(NUTANIX_VALIDATE_TARGETS)
+$(NUTANIX_VALIDATE_TARGETS): deps-nutanix
+	packer validate $(PACKER_NODE_FLAGS) -var-file="packer/nutanix/nutanix.json" -var-file="$(abspath packer/nutanix/$(subst validate-nutanix-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/nutanix/packer.json
+
 
 ## --------------------------------------
 ## Dynamic clean targets
@@ -521,6 +540,9 @@ build-do-all: $(DO_BUILD_TARGETS) ## Builds all DigitalOcean Snapshot
 build-gce-ubuntu-1804: ## Builds the GCE ubuntu-1804 image
 build-gce-ubuntu-2004: ## Builds the GCE ubuntu-2004 image
 build-gce-all: $(GCE_BUILD_TARGETS) ## Builds all GCE image
+
+build-nutanix-ubuntu-2004: ## Builds the Nutanix ubuntu-2004 image
+build-nutanix-all: $(NUTANIX_BUILD_TARGETS) ## Builds all Nutanix image
 
 build-node-ova-local-centos-7: ## Builds CentOS 7 Node OVA w local hypervisor
 build-node-ova-local-photon-3: ## Builds Photon 3 Node OVA w local hypervisor
@@ -641,6 +663,9 @@ validate-gce-ubuntu-1804: ## Validates Ubuntu 18.04 GCE Snapshot Packer config
 validate-gce-ubuntu-2004: ## Validates Ubuntu 20.04 GCE Snapshot Packer config
 validate-gce-all: $(GCE_VALIDATE_TARGETS) ## Validates all GCE Snapshot Packer config
 
+validate-nutanix-ubuntu-2004: ## Validates Ubuntu 20.04 Nutanix Snapshot Packer config
+validate-nutanix-all: $(NUTANIX_VALIDATE_TARGETS) ## Validates all Nutanix Snapshot Packer config
+
 validate-node-ova-local-centos-7: ## Validates CentOS 7 Node OVA Packer config w local hypervisor
 validate-node-ova-local-photon-3: ## Validates Photon 3 Node OVA Packer config w local hypervisor
 validate-node-ova-local-rhel-7: ## Validates RHEL 7 Node OVA Packer config w local hypervisor
@@ -693,6 +718,7 @@ validate-all: validate-ami-all \
 	validate-azure-all \
 	validate-do-all \
 	validate-gce-all \
+	validate-nutanix-all \
 	validate-node-ova-local-all \
 	validate-haproxy-ova-local-photon-3 \
 	validate-qemu-flatcar \
