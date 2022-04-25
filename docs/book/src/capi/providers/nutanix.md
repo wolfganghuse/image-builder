@@ -40,7 +40,7 @@ From `images/capi` directory, run `make build-nutanix-ubuntu-<version>` command 
 
 For instance, to build an image for `ubuntu 20-04`, run
 ```bash
-$ make build-nutanix-ubuntu-1804
+$ make build-nutanix-ubuntu-2004
 ```
 
 To build all Nutanix ubuntu images, run
@@ -51,7 +51,7 @@ make build-nutanix-all
 
 ## Configuration
 
-The `nutanix` sub-directory inside `images/capi/packer` stores JSON configuration files for Ubuntu OS.
+The `nutanix` sub-directory inside `images/capi/packer` stores JSON configuration files for Ubuntu OS including necessary cloud-init.
 
 | File | Description
 | -------- | --------
