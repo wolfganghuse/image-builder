@@ -16,6 +16,7 @@ If any needed binaries are not present, they can be installed to `images/capi/.b
 
 * [AWS](./providers/aws.md)
 * [Azure](./providers/azure.md)
+* [CloudStack](./providers/cloudstack.md)
 * [DigitalOcean](./providers/digitalocean.md)
 * [GCP](./providers/gcp.md)
 * [Nutanix](./providers/nutanix.md)
@@ -50,18 +51,17 @@ Several variables can be used to customize the image build.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `custom_role` | If set to `"true"`, this will cause `image-builder` to run a custom Ansible role right before the `sysprep` role to allow for further customization. | `"false"` |
-| `custom_role_names` | This must be set if `custom_role` is set to `"true"`, and is the space delimited string of the roles to run. If the role is placed in the `ansible/roles` directory, it can be referenced by name. Otherwise, it must be a fully qualified path to the role. | `""` |
+| `firstboot_custom_roles_pre`<br />`firstboot_custom_roles_post`<br />`node_custom_roles_pre`<br />`node_custom_roles_post` | Each of these four variables allows for giving a space delimited string of custom Ansible roles to run at different times. The "pre" roles run as the very first thing in the playbook (useful for setting up environment specifics like networking changes), and the "post" roles as the very last (useful for undoing those changes, custom additions, etc). Note that the "post" role does run before the "sysprep" role in the "node" playbook, as the "sysprep" role seals the image. If the role is placed in the `ansible/roles` directory, it can be referenced by name. Otherwise, it must be a fully qualified path to the role. | `""` |
 | `disable_public_repos` | If set to `"true"`, this will disable all existing package repositories defined in the OS before doing any package installs. The `extra_repos` variable *must* be set for package installs to succeed. | `"false"` |
 | `extra_debs` | This can be set to a space delimited string containing the names of additional deb packages to install | `""` |
 | `extra_repos` | A space delimited string containing the names of files to add to the image containing repository definitions. The files should be given as absolute paths. | `""` |
 | `extra_rpms` | This can be set to a space delimited string containing the names of additional RPM packages to install | `""` |
 | `http_proxy` | This can be set to URL to use as an HTTP proxy during the Ansible stage of building | `""` |
 | `https_proxy` | This can be set to URL to use as an HTTPS proxy during the Ansible stage of building | `""` |
-| `kubernetes_deb_version` | This can be set to the version of kubernetes which will be installed in debian based image | `"1.21.9-00"` |
-| `kubernetes_rpm_version` | This can be set to the version of kubernetes which will be installed in rpm based image | `"1.21.9-0"` |
-| `kubernetes_semver` | This can be set to semantic verion of kubernetes which will be installed in the image | `"v1.21.9"` |
-| `kubernetes_series` | This can be set to series version kubernetes which will be installed in the image | `"v1.21"` |
+| `kubernetes_deb_version` | This can be set to the version of kubernetes which will be installed in debian based image | `"1.22.9-00"` |
+| `kubernetes_rpm_version` | This can be set to the version of kubernetes which will be installed in rpm based image | `"1.22.9-0"` |
+| `kubernetes_semver` | This can be set to semantic verion of kubernetes which will be installed in the image | `"v1.22.9"` |
+| `kubernetes_series` | This can be set to series version kubernetes which will be installed in the image | `"v1.22"` |
 | `no_proxy` | This can be set to a comma-delimited list of domains that should be exluded from proxying during the Ansible stage of building | `""` |
 | `reenable_public_repos` | If set to `"false"`, the package repositories disabled by setting `disable_public_repos` will remain disabled at the end of the build. | `"true"` |
 | `remove_extra_repos` | If set to `"true"`, the package repositories added to the OS through the use of `extra_repos` will be removed at the end of the build. | `"false"` |
@@ -194,3 +194,16 @@ PACKER_VAR_FILES=proxy.json make build-node-ova-local-photon-3
   "myvar2": "value2"
 }
 ```
+
+##### Enabling Ansible custom roles
+
+Put the Ansible role files in the `ansible/roles` directory.
+
+```json
+{
+  "firstboot_custom_roles_pre": "setupRole",
+  "node_custom_roles_post": "role1 role2"
+}
+```
+
+Note, for backwards compatibility reasons, the variable `custom_role_names` is still accepted as an alternative to `node_custom_roles_post`, and they are functionally equivalent.
