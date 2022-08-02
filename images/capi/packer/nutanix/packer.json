@@ -2,7 +2,7 @@
   "builders": [
     {
 
-      "cluster": "{{user `nutanix_cluster`}}",     
+      "cluster_name": "{{user `nutanix_cluster`}}",     
       "image_name": "{{user `image_name`}}",    
       "vm_disks" :{
           "image_type": "DISK_IMAGE",
